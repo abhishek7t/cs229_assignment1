@@ -38,7 +38,6 @@ def svm_loss_naive(W, X, y, reg):
                 continue
             margin = scores[j] - correct_class_score + 1  # note delta = 1
             if margin > 0:
-                # pdb.set_trace()
                 grad_margin[:,j] = grad_margin[:,j] + X[i]
                 grad_margin[:,y[i]] = grad_margin[:,y[i]] - X[i]
                 loss += margin
@@ -100,11 +99,6 @@ def svm_loss_vectorized(W, X, y, reg):
     sub_grad_contrib = np.zeros((num_train, num_classes, X.shape[1]))
     for i in range(num_train):
         sub_grad_contrib[i, y[i], :] = X[i] * count_grad_contrib[i]
-
-    # sub_locs = np.zeros_like(losses)
-    # sub_locs[np.arange(num_train), y] = 1
-    # X_sub_contrib = X_reshaped * count_grad_contrib.reshape([num_train, 1, 1])
-    # sub_grad_contrib = np.where(sub_locs.reshape([num_train, num_classes, 1]) > 0, X_sub_contrib, 0)
     
 
     dW = -np.sum(sub_grad_contrib, axis=0).T / num_train + np.sum(add_grad_contrib, axis=0).T / num_train + 2 * reg * W

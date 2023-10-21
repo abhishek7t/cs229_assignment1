@@ -88,7 +88,32 @@ def softmax_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    (D, C) = W.shape
+    N = X.shape[0]
+
+    f = np.matmul(X, W)
+    g = f - np.amax(f, axis=1, keepdims=True)
+    exp_g = np.exp(g) #(C,)
+    h = exp_g / np.sum(exp_g, axis=1, keepdims=True)
+    l = -np.log(h[np.arange(N), y])
+    loss = np.sum(l) / N + reg * np.sum(W * W)
+
+    dl_dg = -np.eye(C)[y] + h
+
+    max_ind = np.argmax(f, axis=1)
+    dg_df = np.zeros([N,C,C])
+    dg_df[:,:,max_ind] = -1
+    dg_df = dg_df + np.eye(C)
+
+    dl_df = np.matmul(dl_dg.reshape([N,1,C]), dg_df) # (N, 1, C)
+
+    grad = np.zeros([N,D,C])
+    for k in range(C):
+        grad[:,:,k] = grad[:, :, k] + X * dl_df[:, 0, k].reshape([-1,1])
+
+    grad = np.sum(grad, axis=0)
+
+    dW = grad / N + 2 * reg * W
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
