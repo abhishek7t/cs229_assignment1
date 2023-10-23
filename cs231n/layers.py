@@ -1,5 +1,6 @@
 from builtins import range
 import numpy as np
+import pdb
 
 
 
@@ -27,8 +28,10 @@ def affine_forward(x, w, b):
     # will need to reshape the input into rows.                               #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
+  
+    (D, _) = w.shape
+    out = np.matmul(x.reshape([-1, D]), w) + b
+    # pdb.set_trace()
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -61,7 +64,28 @@ def affine_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    (D, M) = w.shape
+    (N, _) = dout.shape
+    x_flattened = x.reshape([-1, D])
+
+    db = np.zeros([N,M,M]) + np.eye(M)
+    db = np.einsum('ik,ikl->l', dout.reshape([N,M]), db)
+
+    dw = np.zeros_like(w)
+
+    dx = np.zeros([N,M,D]) + w.T
+    dx = np.einsum('ik,ikl->il', dout, dx)
+    dx = dx.reshape(x.shape)
+
+    dw = np.zeros([N, M, D, M])
+    # for j in range(M):
+    #     dw[:, j, :, j] = x_flattened
+
+    j_indices = np.arange(M)
+    # Using advanced indexing and broadcasting to set values
+    dw[:, j_indices, :, j_indices] = x_flattened
+
+    dw = np.einsum('ik,iklm->lm', dout, dw)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
