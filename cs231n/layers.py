@@ -31,7 +31,6 @@ def affine_forward(x, w, b):
   
     (D, _) = w.shape
     out = np.matmul(x.reshape([-1, D]), w) + b
-    # pdb.set_trace()
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -84,7 +83,6 @@ def affine_backward(dout, cache):
     j_indices = np.arange(M)
     # Using advanced indexing and broadcasting to set values
     dw[:, j_indices, :, j_indices] = x_flattened
-
     dw = np.einsum('ik,iklm->lm', dout, dw)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
@@ -111,7 +109,7 @@ def relu_forward(x):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    out = np.where(x > 0, x, 0)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -138,7 +136,16 @@ def relu_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    diag = np.where(x > 0, 1, 0)
+    N = x.shape[0]
+    diag = diag.reshape([N, -1])
+    D = diag.shape[1]
+    dx = np.zeros([N, D, D])
+    j_idx = np.arange(D)
+    dx[:, j_idx, j_idx] = diag
+
+    dx = np.einsum('ij,ijk->ik', dout, dx)
+    dx = dx.reshape(x.shape)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -797,7 +804,20 @@ def svm_loss(x, y):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N = x.shape[0]
+
+    scores = x
+    correct_class_scores = scores[np.arange(N), y]
+    margins = scores - correct_class_scores.reshape([-1,1]) + 1
+    losses = np.where(margins > 0, margins, 0)
+    losses[np.arange(N), y] = 0
+
+    loss = np.sum(losses) / N
+
+    dx = np.where(losses > 0, 1, 0)
+    y_sub_count = np.sum(dx, axis=1)
+    dx[np.arange(N), y] = -1 * y_sub_count
+    dx = dx / N
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -827,7 +847,24 @@ def softmax_loss(x, y):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N = x.shape[0]
+    C = x.shape[1]
+
+    g = x - np.amax(x, axis=1, keepdims=True)
+    exp_g = np.exp(g) #(C,)
+    h = exp_g / np.sum(exp_g, axis=1, keepdims=True)
+    l = -np.log(h[np.arange(N), y])
+    loss = np.sum(l) / N
+
+    dl_dg = -np.eye(C)[y] + h
+
+    max_ind = np.argmax(x, axis=1)
+    dg_df = np.zeros([N,C,C])
+    dg_df[:,:,max_ind] = -1
+    dg_df = dg_df + np.eye(C)
+
+    dl_df = np.matmul(dl_dg.reshape([N,1,C]), dg_df) # (N, 1, C)
+    dx = dl_df.reshape(x.shape) / N
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
